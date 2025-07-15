@@ -1,0 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.container {
+    width: 100%;
+    max-width: 600px;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border: 1px solid #333;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 1rem;
+}
+
+header h1 {
+    margin: 0;
+    color: #00b894; /* Yeşil tonu */
+}
+
+.controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+#symbol-input {
+    flex-grow: 1;
+    padding: 0.75rem;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background-color: #2c2c2c;
+    color: #e0e0e0;
+    font-size: 1rem;
+}
+
+button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#start-button {
+    background-color: #00b894;
+    color: #121212;
+}
+
+#start-button:hover:not(:disabled) {
+    background-color: #00a080;
+}
+
+#stop-button {
+    background-color: #d63031;
+    color: #fff;
+}
+
+#stop-button:hover:not(:disabled) {
+    background-color: #b02021;
+}
+
+button:disabled {
+    background-color: #555;
+    color: #888;
+    cursor: not-allowed;
+}
+
+.status-box {
+    background-color: #2c2c2c;
+    border: 1px solid #444;
+    padding: 1.5rem;
+    border-radius: 4px;
+}
+
+.status-box h2 {
+    margin-top: 0;
+    border-bottom: 1px solid #555;
+    padding-bottom: 0.5rem;
+}
+
+.status-box p {
+    margin: 0.5rem 0;
+    line-height: 1.6;
+}
+
+.status-box span {
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.status-running { color: #00b894; }
+.status-stopped { color: #d63031; }
+.status-in-position { color: #0984e3; }
+
+footer {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.8rem;
+    color: #888;
+}

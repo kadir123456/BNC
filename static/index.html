@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binance Futures Bot</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Binance Futures İşlem Botu</h1>
+            <p>5 Dakikalık EMA Kesişim Stratejisi</p>
+        </header>
+
+        <main>
+            <div class="controls">
+                <input type="text" id="symbol-input" placeholder="Örn: BTCUSDT">
+                <button id="start-button">Botu Başlat</button>
+                <button id="stop-button" disabled>Botu Durdur</button>
+            </div>
+
+            <div id="status-container" class="status-box">
+                <h2>Bot Durumu</h2>
+                <p><strong>Mesaj:</strong> <span id="status-message">Bot başlatılmadı.</span></p>
+                <p><strong>İzlenen Sembol:</strong> <span id="current-symbol">N/A</span></p>
+                <p><strong>Pozisyonda mı?:</strong> <span id="position-status">Hayır</span></p>
+                <p><strong>Son Sinyal:</strong> <span id="last-signal">N/A</span></p>
+            </div>
+        </main>
+
+        <footer>
+            <p>Bu bot Testnet üzerinde kullanılmak üzere tasarlanmıştır. Gerçek piyasada kullanmadan önce riskleri anladığınızdan emin olun.</p>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
