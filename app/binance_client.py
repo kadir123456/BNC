@@ -33,11 +33,7 @@ class BinanceClient:
             return []
 
     async def set_leverage(self, symbol: str, leverage: int):
-        """
-        Belirtilen sembol için kaldıracı ayarlar. (Düzeltilmiş Fonksiyon)
-        """
         try:
-            # Fonksiyon adını 'futures_change_leverage' olarak düzeltiyoruz.
             await self.client.futures_change_leverage(symbol=symbol, leverage=leverage)
             print(f"Başarılı: {symbol} kaldıracı {leverage}x olarak ayarlandı.")
             return True
@@ -54,10 +50,9 @@ class BinanceClient:
             return None
 
     async def create_market_order_with_tp_sl(self, symbol: str, side: str, quantity: float, entry_price: float):
-        # Bu fonksiyonun geri kalanı aynı kalacak...
         try:
-            # Pozisyon açmak için create_futures_order kullanmak daha doğru
-            main_order = await self.client.create_futures_order(
+            # DÜZELTME: 'create_futures_order' yerine 'create_order' kullanıyoruz.
+            main_order = await self.client.create_order(
                 symbol=symbol,
                 side=side,
                 type='MARKET',
@@ -74,8 +69,8 @@ class BinanceClient:
                 tp_price = round(entry_price * (1 - settings.TAKE_PROFIT_PERCENT), 2)
                 sl_price = round(entry_price * (1 + settings.TAKE_PROFIT_PERCENT), 2)
 
-            # TP/SL emirleri için de create_futures_order kullanılmalı
-            await self.client.create_futures_order(
+            # DÜZELTME: 'create_futures_order' yerine 'create_order' kullanıyoruz.
+            await self.client.create_order(
                 symbol=symbol,
                 side='SELL' if side == 'BUY' else 'BUY',
                 type='TAKE_PROFIT_MARKET',
@@ -84,7 +79,8 @@ class BinanceClient:
             )
             print(f"Başarılı: {symbol} için TAKE PROFIT emri {tp_price} seviyesine kuruldu.")
 
-            await self.client.create_futures_order(
+            # DÜZELTME: 'create_futures_order' yerine 'create_order' kullanıyoruz.
+            await self.client.create_order(
                 symbol=symbol,
                 side='SELL' if side == 'BUY' else 'BUY',
                 type='STOP_MARKET',
