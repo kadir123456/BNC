@@ -13,6 +13,7 @@ class BinanceClient:
 
     async def initialize(self):
         if self.client is None:
+            # Kütüphanenin en doğru şekilde çalışması için testnet ayarını burada yapıyoruz.
             self.client = await AsyncClient.create(self.api_key, self.api_secret, testnet=self.is_testnet)
             print("Binance AsyncClient başarıyla başlatıldı.")
         return self.client
@@ -26,6 +27,7 @@ class BinanceClient:
     async def get_historical_klines(self, symbol: str, interval: str, limit: int = 100):
         try:
             print(f"{symbol} için {limit} adet geçmiş mum verisi çekiliyor...")
+            # Bu fonksiyon hem spot hem futures için ortaktır
             klines = await self.client.get_historical_klines(symbol, interval, limit=limit)
             return klines
         except BinanceAPIException as e:
@@ -34,6 +36,7 @@ class BinanceClient:
 
     async def set_leverage(self, symbol: str, leverage: int):
         try:
+            # Futures'a özel fonksiyon
             await self.client.futures_change_leverage(symbol=symbol, leverage=leverage)
             print(f"Başarılı: {symbol} kaldıracı {leverage}x olarak ayarlandı.")
             return True
@@ -43,7 +46,8 @@ class BinanceClient:
 
     async def get_market_price(self, symbol: str) -> float | None:
         try:
-            ticker = await self.client.get_symbol_ticker(symbol=symbol)
+            # Futures'a özel fonksiyon
+            ticker = await self.client.futures_symbol_ticker(symbol=symbol)
             return float(ticker['price'])
         except BinanceAPIException as e:
             print(f"Hata: {symbol} fiyatı alınamadı: {e}")
@@ -51,8 +55,8 @@ class BinanceClient:
 
     async def create_market_order_with_tp_sl(self, symbol: str, side: str, quantity: float, entry_price: float):
         try:
-            # DÜZELTME: 'create_futures_order' yerine 'create_order' kullanıyoruz.
-            main_order = await self.client.create_order(
+            # DÜZELTME: Emirleri 'futures_create_order' ile gönderiyoruz
+            main_order = await self.client.futures_create_order(
                 symbol=symbol,
                 side=side,
                 type='MARKET',
@@ -69,8 +73,7 @@ class BinanceClient:
                 tp_price = round(entry_price * (1 - settings.TAKE_PROFIT_PERCENT), 2)
                 sl_price = round(entry_price * (1 + settings.TAKE_PROFIT_PERCENT), 2)
 
-            # DÜZELTME: 'create_futures_order' yerine 'create_order' kullanıyoruz.
-            await self.client.create_order(
+            await self.client.futures_create_order(
                 symbol=symbol,
                 side='SELL' if side == 'BUY' else 'BUY',
                 type='TAKE_PROFIT_MARKET',
@@ -79,8 +82,7 @@ class BinanceClient:
             )
             print(f"Başarılı: {symbol} için TAKE PROFIT emri {tp_price} seviyesine kuruldu.")
 
-            # DÜZELTME: 'create_futures_order' yerine 'create_order' kullanıyoruz.
-            await self.client.create_order(
+            await self.client.futures_create_order(
                 symbol=symbol,
                 side='SELL' if side == 'BUY' else 'BUY',
                 type='STOP_MARKET',
@@ -93,7 +95,6 @@ class BinanceClient:
 
         except BinanceAPIException as e:
             print(f"Hata: Emir oluşturulurken sorun oluştu: {e}")
-            # Hata durumunda açılmış olabilecek emirleri iptal et
             await self.client.futures_cancel_all_open_orders(symbol=symbol)
             print(f"{symbol} için tüm açık emirler iptal edildi.")
             return None
