@@ -66,5 +66,6 @@ class TradingStrategy:
         self.last_signal = signal
         return signal
 
-# Strateji nesnesini global olarak oluşturalım
-trading_strategy = TradingStrategy()
+# Strateji nesnesini daha hassas periyotlarla global olarak oluşturalım.
+# DEĞİŞİKLİK BURADA YAPILDI:
+trading_strategy = TradingStrategy(short_ema_period=5, long_ema_period=12)
