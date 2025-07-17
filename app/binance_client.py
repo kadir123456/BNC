@@ -9,14 +9,31 @@ class BinanceClient:
         self.api_secret = settings.API_SECRET
         self.is_testnet = settings.ENVIRONMENT == "TEST"
         self.client: AsyncClient | None = None
+        self.exchange_info = None # Borsa bilgilerini hafızada tutmak için
         print(f"Binance İstemcisi başlatılıyor. Ortam: {settings.ENVIRONMENT}")
 
     async def initialize(self):
+        """İstemciyi başlatır ve borsa kurallarını tek seferde çeker."""
         if self.client is None:
-            # Kütüphanenin en doğru şekilde çalışması için testnet ayarını burada yapıyoruz.
             self.client = await AsyncClient.create(self.api_key, self.api_secret, testnet=self.is_testnet)
-            print("Binance AsyncClient başarıyla başlatıldı.")
+            # Borsa bilgilerini başlangıçta bir kere çekiyoruz.
+            self.exchange_info = await self.client.get_exchange_info()
+            print("Binance AsyncClient başarıyla başlatıldı ve borsa bilgileri çekildi.")
         return self.client
+
+    async def get_symbol_info(self, symbol: str) -> dict | None:
+        """Hafızadaki borsa bilgilerinden belirli bir sembolün kurallarını döndürür."""
+        if not self.exchange_info:
+            print("Borsa bilgileri henüz çekilmedi.")
+            return None
+        
+        # Sembolü bul ve bilgilerini döndür
+        for s in self.exchange_info['symbols']:
+            if s['symbol'] == symbol:
+                return s
+        
+        print(f"Uyarı: {symbol} için borsa bilgileri bulunamadı.")
+        return None
 
     async def close(self):
         if self.client:
@@ -27,7 +44,6 @@ class BinanceClient:
     async def get_historical_klines(self, symbol: str, interval: str, limit: int = 100):
         try:
             print(f"{symbol} için {limit} adet geçmiş mum verisi çekiliyor...")
-            # Bu fonksiyon hem spot hem futures için ortaktır
             klines = await self.client.get_historical_klines(symbol, interval, limit=limit)
             return klines
         except BinanceAPIException as e:
@@ -36,7 +52,6 @@ class BinanceClient:
 
     async def set_leverage(self, symbol: str, leverage: int):
         try:
-            # Futures'a özel fonksiyon
             await self.client.futures_change_leverage(symbol=symbol, leverage=leverage)
             print(f"Başarılı: {symbol} kaldıracı {leverage}x olarak ayarlandı.")
             return True
@@ -46,16 +61,14 @@ class BinanceClient:
 
     async def get_market_price(self, symbol: str) -> float | None:
         try:
-            # Futures'a özel fonksiyon
             ticker = await self.client.futures_symbol_ticker(symbol=symbol)
             return float(ticker['price'])
         except BinanceAPIException as e:
             print(f"Hata: {symbol} fiyatı alınamadı: {e}")
             return None
-
+    
     async def create_market_order_with_tp_sl(self, symbol: str, side: str, quantity: float, entry_price: float):
         try:
-            # DÜZELTME: Emirleri 'futures_create_order' ile gönderiyoruz
             main_order = await self.client.futures_create_order(
                 symbol=symbol,
                 side=side,
