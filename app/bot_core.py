@@ -7,10 +7,6 @@ from .trading_strategy import trading_strategy
 import math
 
 class BotCore:
-    """
-    Botun ana mantığını yöneten sınıf. WebSocket bağlantısını kurar,
-    veri akışını işler ve al-sat kararlarını uygular.
-    """
     def __init__(self):
         self.status = {
             "is_running": False,
@@ -21,12 +17,16 @@ class BotCore:
         }
         self.klines = []
         self._stop_requested = False
-        self.quantity_precision = 0 # Miktar hassasiyetini saklamak için yeni değişken
+        self.quantity_precision = 0
+
+    def _get_precision_from_step_size(self, step_size: str) -> int:
+        """'0.001' gibi bir stepSize string'inden ondalık basamak sayısını (3) hesaplar."""
+        if '.' in step_size:
+            # Noktadan sonraki kısmı al ve '1'i bulana kadar gereksiz sıfırları temizle
+            return len(step_size.split('.')[1].rstrip('0'))
+        return 0
 
     async def start(self, symbol: str):
-        """
-        Botun ana çalışma döngüsünü başlatır.
-        """
         if self.status["is_running"]:
             print("Bot zaten çalışıyor.")
             return
@@ -40,22 +40,28 @@ class BotCore:
 
         await binance_client.initialize()
         
-        # YENİ: Sembol bilgilerini ve hassasiyeti al
+        # --- YENİ ve SAĞLAM HASSASİYET HESAPLAMA ---
         symbol_info = await binance_client.get_symbol_info(symbol)
         if not symbol_info:
             self.status["status_message"] = f"{symbol} için borsa bilgileri alınamadı."
-            await self.stop() # Hata durumunda botu durdur
+            await self.stop()
             return
-        self.quantity_precision = symbol_info['quantityPrecision']
-        print(f"{symbol} için miktar hassasiyeti ayarlandı: {self.quantity_precision} ondalık basamak")
         
+        # LOT_SIZE filtresini bul ve stepSize'dan hassasiyeti hesapla
+        for f in symbol_info['filters']:
+            if f['filterType'] == 'LOT_SIZE':
+                step_size = f['stepSize']
+                self.quantity_precision = self._get_precision_from_step_size(step_size)
+                print(f"{symbol} için stepSize '{step_size}' bulundu, miktar hassasiyeti ayarlandı: {self.quantity_precision} ondalık basamak")
+                break
+        # --- HESAPLAMA SONU ---
+
         leverage_set = await binance_client.set_leverage(symbol, settings.LEVERAGE)
         if not leverage_set:
             self.status["status_message"] = "Kaldıraç ayarlanamadı. Bot durduruluyor."
             await self.stop()
             return
 
-        # İsteğiniz üzerine limiti 50'ye düşürüyoruz
         self.klines = await binance_client.get_historical_klines(symbol, "5m", limit=50)
         if not self.klines:
             self.status["status_message"] = "Geçmiş veri alınamadı. Bot durduruluyor."
@@ -66,7 +72,6 @@ class BotCore:
         
         ws_url = f"{settings.WEBSOCKET_URL}/ws/{symbol.lower()}@kline_5m"
         try:
-            # ping_interval ekleyerek bağlantıyı canlı tutuyoruz.
             async with websockets.connect(ws_url, ping_interval=30, ping_timeout=15) as ws:
                 print(f"WebSocket bağlantısı kuruldu: {ws_url} (Ping devrede)")
                 while not self._stop_requested:
@@ -85,11 +90,7 @@ class BotCore:
         await self.stop()
 
     async def stop(self):
-        """
-        Botun çalışma döngüsünü güvenli bir şekilde durdurur.
-        """
         self._stop_requested = True
-        # Zaten çalışan bir stop varsa tekrar çağırmayı önle
         if self.status["is_running"]:
             self.status["is_running"] = False
             self.status["status_message"] = "Bot durduruldu."
@@ -97,9 +98,6 @@ class BotCore:
             await binance_client.close()
 
     async def _handle_websocket_message(self, message: str):
-        """
-        Gelen WebSocket mesajlarını işler.
-        """
         data = json.loads(message)
         
         if data.get('k', {}).get('x', False):
@@ -131,9 +129,6 @@ class BotCore:
         return math.floor(quantity * factor) / factor
 
     async def _execute_trade(self, signal: str):
-        """
-        Belirlenen sinyale göre alım/satım işlemi gerçekleştirir.
-        """
         symbol = self.status["symbol"]
         side = "BUY" if signal == "LONG" else "SELL"
         
@@ -149,7 +144,6 @@ class BotCore:
         position_size = settings.ORDER_SIZE_USDT * settings.LEVERAGE
         unformatted_quantity = position_size / price
         
-        # YENİ: Miktarı doğru hassasiyete göre formatla
         quantity = self._format_quantity(unformatted_quantity)
         
         print(f"Hesaplanan Miktar: {unformatted_quantity:.4f} -> Formatlanan Miktar: {quantity} {symbol.replace('USDT','')}")
