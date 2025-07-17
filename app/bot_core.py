@@ -15,26 +15,19 @@ class BotCore:
         self.klines = []
         self._stop_requested = False
         self.quantity_precision = 0
-        self.price_precision = 0 # Fiyat hassasiyetini saklamak için yeni değişken
+        self.price_precision = 0
 
     def _get_precision_from_filter(self, symbol_info, filter_type, key):
-        """Belirtilen filtre tipinden hassasiyet değerini alır."""
         for f in symbol_info['filters']:
             if f['filterType'] == filter_type:
-                if key == 'stepSize':
-                    # '0.001' gibi bir string'den ondalık basamak sayısını (3) hesaplar
-                    step_size = f[key]
-                    if '.' in step_size:
-                        return len(step_size.split('.')[1].rstrip('0'))
-                    return 0
-                elif key == 'tickSize':
-                    # Fiyat hassasiyeti için de aynı mantığı kullanabiliriz
-                    tick_size = f[key]
-                    if '.' in tick_size:
-                        return len(tick_size.split('.')[1].rstrip('0'))
+                if key == 'stepSize' or key == 'tickSize':
+                    size_str = f[key]
+                    if '.' in size_str:
+                        return len(size_str.split('.')[1].rstrip('0'))
                     return 0
         return 0
-
+    
+    # ... start ve stop fonksiyonları aynı ...
     async def start(self, symbol: str):
         if self.status["is_running"]:
             print("Bot zaten çalışıyor.")
@@ -53,12 +46,10 @@ class BotCore:
             await self.stop()
             return
             
-        # Hem miktar hem fiyat hassasiyetini al
         self.quantity_precision = self._get_precision_from_filter(symbol_info, 'LOT_SIZE', 'stepSize')
         self.price_precision = self._get_precision_from_filter(symbol_info, 'PRICE_FILTER', 'tickSize')
         print(f"{symbol} için Miktar Hassasiyeti: {self.quantity_precision}, Fiyat Hassasiyeti: {self.price_precision}")
         
-        # ... (start fonksiyonunun geri kalanı aynı) ...
         leverage_set = await binance_client.set_leverage(symbol, settings.LEVERAGE)
         if not leverage_set:
             self.status["status_message"] = "Kaldıraç ayarlanamadı. Bot durduruluyor."
@@ -90,9 +81,59 @@ class BotCore:
         except Exception as e:
             print(f"WebSocket bağlantı hatası: {e}")
         await self.stop()
+        
+    async def stop(self):
+        self._stop_requested = True
+        if self.status["is_running"]:
+            self.status["is_running"] = False
+            self.status["status_message"] = "Bot durduruldu."
+            print(self.status["status_message"])
+            await binance_client.close()
+
+    # --- _handle_websocket_message fonksiyonunu güncelliyoruz ---
+    async def _handle_websocket_message(self, message: str):
+        data = json.loads(message)
+        
+        if data.get('k', {}).get('x', False):
+            kline_data = data['k']
+            print(f"Yeni mum kapandı: {self.status['symbol']} - Kapanış Fiyatı: {kline_data['c']}")
+            
+            self.klines.pop(0)
+            self.klines.append([
+                kline_data['t'], kline_data['o'], kline_data['h'], kline_data['l'], kline_data['c'], kline_data['v'],
+                kline_data['T'], kline_data['q'], kline_data['n'], kline_data['V'], kline_data['Q'], '0'
+            ])
+
+            # POZİSYON KONTROL MANTIĞI BURADA
+            if self.status["in_position"]:
+                # Pozisyondaysak, pozisyonun hala açık olup olmadığını kontrol et
+                open_positions = await binance_client.get_open_positions()
+                position_still_open = any(p['symbol'] == self.status['symbol'] for p in open_positions)
+                
+                if not position_still_open:
+                    print(f"--> {self.status['symbol']} pozisyonu kapandı. Yeni sinyaller dinleniyor.")
+                    self.status["in_position"] = False
+                    self.status["status_message"] = f"{self.status['symbol']} için sinyal bekleniyor..."
+                else:
+                    print("--> Pozisyon hala açık, TP/SL bekleniyor.")
+            
+            # Eğer pozisyonda değilsek yeni sinyal ara
+            if not self.status["in_position"]:
+                signal = trading_strategy.analyze_klines(self.klines)
+                self.status["last_signal"] = signal
+                print(f"Strateji analizi sonucu: {signal}")
+
+                if signal in ["LONG", "SHORT"]:
+                    await self._execute_trade(signal)
+
+    # ... (_format_quantity ve _execute_trade fonksiyonları aynı) ...
+    def _format_quantity(self, quantity: float) -> float:
+        if self.quantity_precision == 0:
+            return math.floor(quantity)
+        factor = 10 ** self.quantity_precision
+        return math.floor(quantity * factor) / factor
 
     async def _execute_trade(self, signal: str):
-        # ... (execute_trade'in başı aynı) ...
         symbol = self.status["symbol"]
         side = "BUY" if signal == "LONG" else "SELL"
         self.status["status_message"] = f"{signal} sinyali alındı. İşlem hazırlanıyor..."
@@ -113,50 +154,16 @@ class BotCore:
             print("Hesaplanan miktar çok düşük, emir gönderilemiyor.")
             return
         
-        # DEĞİŞİKLİK: Fiyat hassasiyetini de client'a gönderiyoruz
-        order = await binance_client.create_market_order_with_tp_sl(symbol, side, quantity, price, self.price_precision)
+        order = await binance_client.create_market_order_with_tp_sl(
+            symbol, side, quantity, price, self.price_precision)
 
-        # ... (execute_trade'in sonu aynı) ...
         if order:
             self.status["in_position"] = True
             self.status["status_message"] = f"{signal} pozisyonu {price} fiyattan açıldı. TP/SL kuruldu."
             print(self.status["status_message"])
         else:
             self.status["status_message"] = "Emir gönderilemedi. Lütfen logları kontrol edin."
-            print(self.status["status_message"])
-
-    # Diğer fonksiyonlar (stop, _handle_websocket_message, _format_quantity) aynı kalacak...
-    async def stop(self):
-        self._stop_requested = True
-        if self.status["is_running"]:
-            self.status["is_running"] = False
-            self.status["status_message"] = "Bot durduruldu."
-            print(self.status["status_message"])
-            await binance_client.close()
-
-    async def _handle_websocket_message(self, message: str):
-        data = json.loads(message)
-        if data.get('k', {}).get('x', False):
-            kline_data = data['k']
-            print(f"Yeni mum kapandı: {self.status['symbol']} - Kapanış Fiyatı: {kline_data['c']}")
-            self.klines.pop(0)
-            self.klines.append([
-                kline_data['t'], kline_data['o'], kline_data['h'], kline_data['l'], kline_data['c'], kline_data['v'],
-                kline_data['T'], kline_data['q'], kline_data['n'], kline_data['V'], kline_data['Q'], '0'
-            ])
-            if not self.status["in_position"]:
-                signal = trading_strategy.analyze_klines(self.klines)
-                self.status["last_signal"] = signal
-                print(f"Strateji analizi sonucu: {signal}")
-                if signal in ["LONG", "SHORT"]:
-                    await self._execute_trade(signal)
-            else:
-                print("Zaten bir pozisyon açık, yeni sinyal işlenmiyor.")
-
-    def _format_quantity(self, quantity: float) -> float:
-        if self.quantity_precision == 0:
-            return math.floor(quantity)
-        factor = 10 ** self.quantity_precision
-        return math.floor(quantity * factor) / factor
+            # Emir başarısız olduğunda pozisyonda olmadığımızdan emin olalım
+            self.status["in_position"] = False
 
 bot_core = BotCore()
