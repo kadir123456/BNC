@@ -26,7 +26,7 @@ class Settings:
 
     # --- İşlem Parametreleri ---
     LEVERAGE: int = 10
-    ORDER_SIZE_USDT: float = 20.0
+    ORDER_SIZE_USDT: float = 50.0
     # TP ve SL yüzdeleri (örneğin giriş fiyatının %0.6'sı)
     TAKE_PROFIT_PERCENT: float = 0.006  # %0.6
     STOP_LOSS_PERCENT: float = 0.006   # %0.6 (Risk/Kazanç Oranı 1:1)
