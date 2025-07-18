@@ -18,6 +18,7 @@ class BotCore:
         self.price_precision = 0
 
     def _get_precision_from_filter(self, symbol_info, filter_type, key):
+        """Belirtilen filtre tipinden hassasiyet değerini alır."""
         for f in symbol_info['filters']:
             if f['filterType'] == filter_type:
                 if key == 'stepSize' or key == 'tickSize':
@@ -27,7 +28,6 @@ class BotCore:
                     return 0
         return 0
     
-    # ... start ve stop fonksiyonları aynı ...
     async def start(self, symbol: str):
         if self.status["is_running"]:
             print("Bot zaten çalışıyor.")
@@ -56,15 +56,17 @@ class BotCore:
             await self.stop()
             return
 
-        self.klines = await binance_client.get_historical_klines(symbol, "5m", limit=50)
+        # DEĞİŞİKLİK 1: Zaman dilimi artık config dosyasından okunuyor
+        self.klines = await binance_client.get_historical_klines(symbol, settings.TIMEFRAME, limit=50)
         if not self.klines:
             self.status["status_message"] = "Geçmiş veri alınamadı. Bot durduruluyor."
             await self.stop()
             return
         
-        self.status["status_message"] = f"{symbol} için sinyal bekleniyor..."
+        self.status["status_message"] = f"{symbol} ({settings.TIMEFRAME}) için sinyal bekleniyor..."
         
-        ws_url = f"{settings.WEBSOCKET_URL}/ws/{symbol.lower()}@kline_5m"
+        # DEĞİŞİKLİK 2: WebSocket adresi artık config dosyasından gelen zaman dilimini kullanıyor
+        ws_url = f"{settings.WEBSOCKET_URL}/ws/{symbol.lower()}@kline_{settings.TIMEFRAME}"
         try:
             async with websockets.connect(ws_url, ping_interval=30, ping_timeout=15) as ws:
                 print(f"WebSocket bağlantısı kuruldu: {ws_url} (Ping devrede)")
@@ -90,13 +92,12 @@ class BotCore:
             print(self.status["status_message"])
             await binance_client.close()
 
-    # --- _handle_websocket_message fonksiyonunu güncelliyoruz ---
     async def _handle_websocket_message(self, message: str):
         data = json.loads(message)
         
         if data.get('k', {}).get('x', False):
             kline_data = data['k']
-            print(f"Yeni mum kapandı: {self.status['symbol']} - Kapanış Fiyatı: {kline_data['c']}")
+            print(f"Yeni mum kapandı: {self.status['symbol']} ({settings.TIMEFRAME}) - Kapanış Fiyatı: {kline_data['c']}")
             
             self.klines.pop(0)
             self.klines.append([
@@ -104,9 +105,7 @@ class BotCore:
                 kline_data['T'], kline_data['q'], kline_data['n'], kline_data['V'], kline_data['Q'], '0'
             ])
 
-            # POZİSYON KONTROL MANTIĞI BURADA
             if self.status["in_position"]:
-                # Pozisyondaysak, pozisyonun hala açık olup olmadığını kontrol et
                 open_positions = await binance_client.get_open_positions()
                 position_still_open = any(p['symbol'] == self.status['symbol'] for p in open_positions)
                 
@@ -117,7 +116,6 @@ class BotCore:
                 else:
                     print("--> Pozisyon hala açık, TP/SL bekleniyor.")
             
-            # Eğer pozisyonda değilsek yeni sinyal ara
             if not self.status["in_position"]:
                 signal = trading_strategy.analyze_klines(self.klines)
                 self.status["last_signal"] = signal
@@ -126,7 +124,6 @@ class BotCore:
                 if signal in ["LONG", "SHORT"]:
                     await self._execute_trade(signal)
 
-    # ... (_format_quantity ve _execute_trade fonksiyonları aynı) ...
     def _format_quantity(self, quantity: float) -> float:
         if self.quantity_precision == 0:
             return math.floor(quantity)
@@ -163,7 +160,6 @@ class BotCore:
             print(self.status["status_message"])
         else:
             self.status["status_message"] = "Emir gönderilemedi. Lütfen logları kontrol edin."
-            # Emir başarısız olduğunda pozisyonda olmadığımızdan emin olalım
             self.status["in_position"] = False
 
 bot_core = BotCore()
