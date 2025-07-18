@@ -13,7 +13,7 @@ class Settings:
     WEBSOCKET_URL = "wss://fstream.binance.com" if os.getenv("ENVIRONMENT", "TEST") == "LIVE" else "wss://stream.binancefuture.com"
     LEVERAGE: int = 10
     ORDER_SIZE_USDT: float = 100.0
-    TIMEFRAME: str = "15m"
+    TIMEFRAME: str = "5m"
     TAKE_PROFIT_PERCENT: float = 0.003
     STOP_LOSS_PERCENT: float = 0.003
     TRAILING_ACTIVATION_PERCENT: float = 0.0015
