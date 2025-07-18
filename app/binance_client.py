@@ -5,34 +5,25 @@ from .config import settings
 
 class BinanceClient:
     def __init__(self):
-        self.api_key = settings.API_KEY
-        self.api_secret = settings.API_SECRET
-        self.is_testnet = settings.ENVIRONMENT == "TEST"
-        self.client: AsyncClient | None = None
-        self.exchange_info = None
-        print(f"Binance İstemcisi başlatılıyor. Ortam: {settings.ENVIRONMENT}")
-
+        self.api_key = settings.API_KEY; self.api_secret = settings.API_SECRET
+        self.is_testnet = settings.ENVIRONMENT == "TEST"; self.client: AsyncClient | None = None
+        self.exchange_info = None; print(f"Binance İstemcisi başlatılıyor. Ortam: {settings.ENVIRONMENT}")
     async def initialize(self):
         if self.client is None:
             self.client = await AsyncClient.create(self.api_key, self.api_secret, testnet=self.is_testnet)
             self.exchange_info = await self.client.get_exchange_info()
             print("Binance AsyncClient başarıyla başlatıldı ve borsa bilgileri çekildi.")
         return self.client
-
     async def get_symbol_info(self, symbol: str):
         if not self.exchange_info: return None
         for s in self.exchange_info['symbols']:
             if s['symbol'] == symbol: return s
         return None
-
     async def get_open_positions(self):
         try:
             positions = await self.client.futures_position_information()
             return [p for p in positions if float(p['positionAmt']) != 0]
-        except BinanceAPIException as e:
-            print(f"Hata: Pozisyon bilgileri alınamadı: {e}")
-            return []
-
+        except BinanceAPIException as e: print(f"Hata: Pozisyon bilgileri alınamadı: {e}"); return []
     async def create_market_order_with_tp_sl(self, symbol: str, side: str, quantity: float, entry_price: float, price_precision: int):
         def format_price(price): return f"{price:.{price_precision}f}"
         try:
@@ -51,29 +42,20 @@ class BinanceClient:
             print(f"Hata: Emir oluşturulurken sorun oluştu: {e}")
             await self.client.futures_cancel_all_open_orders(symbol=symbol)
             print(f"{symbol} için tüm açık emirler iptal edildi."); return None
-
     async def close_open_position(self, symbol: str):
-        """Belirtilen semboldeki açık pozisyonu piyasa emriyle kapatır."""
         try:
             positions = await self.client.futures_position_information(symbol=symbol)
             for position in positions:
                 if float(position['positionAmt']) != 0:
                     side = 'SELL' if float(position['positionAmt']) > 0 else 'BUY'
                     quantity = abs(float(position['positionAmt']))
-                    
                     await self.client.futures_cancel_all_open_orders(symbol=symbol)
-                    await asyncio.sleep(0.1) # İptal emrinin işlenmesi için kısa bir bekleme
-                    
-                    response = await self.client.futures_create_order(
-                        symbol=symbol, side=side, type='MARKET',
-                        quantity=quantity, reduceOnly=True)
+                    await asyncio.sleep(0.1)
+                    response = await self.client.futures_create_order(symbol=symbol, side=side, type='MARKET', quantity=quantity, reduceOnly=True)
                     print(f"--> TRAILING STOP ile POZİSYON KAPATILDI: {response}")
                     return response
             return None
-        except BinanceAPIException as e:
-            print(f"Hata: Pozisyon kapatılırken sorun oluştu: {e}")
-            return None
-
+        except BinanceAPIException as e: print(f"Hata: Pozisyon kapatılırken sorun oluştu: {e}"); return None
     async def close(self):
         if self.client: await self.client.close_connection(); self.client = None; print("Binance AsyncClient bağlantısı kapatıldı.")
     async def get_historical_klines(self, symbol: str, interval: str, limit: int = 100):
