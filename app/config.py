@@ -27,10 +27,10 @@ class Settings:
     # --- İşlem Parametreleri ---
     LEVERAGE: int = 10
     ORDER_SIZE_USDT: float = 100.0
-    TIMEFRAME: str = "15m" # <-- EKLENEN YENİ SATIR
+    TIMEFRAME: str = "5m" # <-- EKLENEN YENİ SATIR
     # TP ve SL yüzdeleri (örneğin giriş fiyatının %0.6'sı)
-    TAKE_PROFIT_PERCENT: float = 0.006  # %0.6
-    STOP_LOSS_PERCENT: float = 0.006   # %0.6 (Risk/Kazanç Oranı 1:1)
+    TAKE_PROFIT_PERCENT: float = 0.003  # %0.6
+    STOP_LOSS_PERCENT: float = 0.004   # %0.6 (Risk/Kazanç Oranı 1:1)
 
 
 # Ayarları global olarak kullanılabilir hale getir
