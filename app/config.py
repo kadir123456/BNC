@@ -30,7 +30,7 @@ class Settings:
     TIMEFRAME: str = "5m" # <-- EKLENEN YENİ SATIR
     # TP ve SL yüzdeleri (örneğin giriş fiyatının %0.6'sı)
     TAKE_PROFIT_PERCENT: float = 0.003  # %0.6
-    STOP_LOSS_PERCENT: float = 0.004   # %0.6 (Risk/Kazanç Oranı 1:1)
+    STOP_LOSS_PERCENT: float = 0.003   # %0.6 (Risk/Kazanç Oranı 1:1)
 
 
 # Ayarları global olarak kullanılabilir hale getir
