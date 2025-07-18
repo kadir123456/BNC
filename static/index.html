@@ -3,35 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Binance Futures Bot</title>
+    <title>Bilwin.inc Futures Bot</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div class="container">
         <header>
-            <h1>Binance Futures İşlem Botu</h1>
-            <p>5 Dakikalık EMA Kesişim Stratejisi</p>
+            <h1>Binance Futures Bot</h1>
+            <p>Otomatik Trend Filtreli İşlem Stratejisi</p>
         </header>
 
         <main>
-            <div class="controls">
-                <input type="text" id="symbol-input" placeholder="Örn: BTCUSDT">
-                <button id="start-button">Botu Başlat</button>
-                <button id="stop-button" disabled>Botu Durdur</button>
+            <div class="card controls-card">
+                <h2>Kontrol Paneli</h2>
+                <div class="form-group">
+                    <label for="symbol-input">Coin Sembolü</label>
+                    <input type="text" id="symbol-input" placeholder="Örn: BTCUSDT">
+                </div>
+                <div class="button-group">
+                    <button id="start-button" class="btn btn-start">Botu Başlat</button>
+                    <button id="stop-button" class="btn btn-stop" disabled>Botu Durdur</button>
+                </div>
             </div>
 
-            <div id="status-container" class="status-box">
+            <div class="card status-card">
                 <h2>Bot Durumu</h2>
-                <p><strong>Mesaj:</strong> <span id="status-message">Bot başlatılmadı.</span></p>
-                <p><strong>İzlenen Sembol:</strong> <span id="current-symbol">N/A</span></p>
-                <p><strong>Pozisyonda mı?:</strong> <span id="position-status">Hayır</span></p>
-                <p><strong>Son Sinyal:</strong> <span id="last-signal">N/A</span></p>
+                <div class="status-grid">
+                    <p class="status-label">Mesaj:</p>
+                    <p class="status-value"><span id="status-message">Bot başlatılmadı.</span></p>
+
+                    <p class="status-label">İzlenen Sembol:</p>
+                    <p class="status-value"><span id="current-symbol">N/A</span></p>
+
+                    <p class="status-label">Pozisyonda mı?:</p>
+                    <p class="status-value"><span id="position-status">Hayır</span></p>
+
+                    <p class="status-label">Son Sinyal:</p>
+                    <p class="status-value"><span id="last-signal">N/A</span></p>
+                </div>
             </div>
         </main>
 
         <footer>
-            <p>Bu bot Testnet üzerinde kullanılmak üzere tasarlanmıştır. Gerçek piyasada kullanmadan önce riskleri anladığınızdan emin olun.</p>
+            <p>Bu bot, eğitim amaçlı geliştirilmiştir. Gerçek piyasada kullanmadan önce riskleri anladığınızdan emin olun.</p>
         </footer>
     </div>
 
