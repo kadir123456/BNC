@@ -11,24 +11,9 @@
 </head>
 <body>
 
-    <!-- GİRİŞ EKRANI (Başlangıçta bu görünecek) -->
     <div id="login-container" class="container">
-        <div class="card">
-            <h1>Bota Giriş Yap</h1>
-            <div class="form-group">
-                <label for="email">E-posta</label>
-                <input type="email" id="email" placeholder="ornek@mail.com" autocomplete="email">
-            </div>
-            <div class="form-group">
-                <label for="password">Şifre</label>
-                <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
-            </div>
-            <button id="login-button" class="btn btn-start">Giriş Yap</button>
-            <p id="login-error" class="error-message"></p>
         </div>
-    </div>
 
-    <!-- ANA KONTROL PANELİ (Giriş yapınca bu görünecek) -->
     <div id="app-container" class="container" style="display: none;">
         <header>
             <h1>Binance Futures Bot</h1>
@@ -37,37 +22,39 @@
         </header>
 
         <main>
-            <div class="card controls-card">
-                <h2>Kontrol Paneli</h2>
-                <div class="form-group">
-                    <label for="symbol-input">Coin Sembolü</label>
-                    <input type="text" id="symbol-input" placeholder="Örn: BTCUSDT">
-                </div>
-                <div class="button-group">
-                    <button id="start-button" class="btn btn-start">Botu Başlat</button>
-                    <button id="stop-button" class="btn btn-stop" disabled>Botu Durdur</button>
-                </div>
-            </div>
+            <div class="card controls-card"> ... </div>
+            <div class="card status-card"> ... </div>
 
-            <div class="card status-card">
-                <h2>Bot Durumu</h2>
-                <div class="status-grid">
-                    <p class="status-label">Mesaj:</p>
-                    <p class="status-value"><span id="status-message">Bot başlatılmadı.</span></p>
-                    <p class="status-label">İzlenen Sembol:</p>
-                    <p class="status-value"><span id="current-symbol">N/A</span></p>
-                    <p class="status-label">Pozisyonda mı?:</p>
-                    <p class="status-value"><span id="position-status">Hayır</span></p>
-                    <p class="status-label">Son Sinyal:</p>
-                    <p class="status-value"><span id="last-signal">N/A</span></p>
+            <div class="card stats-card">
+                <h2>Performans İstatistikleri</h2>
+                <div class="stats-grid">
+                    <p class="stats-label">Toplam İşlem:</p>
+                    <p class="stats-value" id="stats-total-trades">0</p>
+
+                    <p class="stats-label">Başarılı İşlem:</p>
+                    <p class="stats-value" id="stats-winning-trades">0 (%0)</p>
+
+                    <p class="stats-label">Brüt Kâr/Zarar:</p>
+                    <p class="stats-value" id="stats-gross-pnl">0.00 USDT</p>
+
+                    <p class="stats-label">Net Kâr/Zarar:</p>
+                    <p class="stats-value" id="stats-net-pnl">0.00 USDT</p>
+                    
+                    <p class="stats-label">Günlük Net K/Z:</p>
+                    <p class="stats-value" id="stats-daily-pnl">0.00 USDT</p>
+
+                    <p class="stats-label">Haftalık Net K/Z:</p>
+                    <p class="stats-value" id="stats-weekly-pnl">0.00 USDT</p>
+
+                    <p class="stats-label">Aylık Net K/Z:</p>
+                    <p class="stats-value" id="stats-monthly-pnl">0.00 USDT</p>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Firebase SDK Script'leri (Önemli: Bu eski versiyonu kullanıyoruz) -->
     <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
-    <script src="/static/script.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script> <script src="/static/script.js"></script>
 </body>
 </html>
