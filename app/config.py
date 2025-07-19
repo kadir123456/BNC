@@ -14,7 +14,7 @@ class Settings:
     LEVERAGE: int = 5
     ORDER_SIZE_USDT: float = 100.0
     TIMEFRAME: str = "5m"
-    TAKE_PROFIT_PERCENT: float = 0.006
+    TAKE_PROFIT_PERCENT: float = 0.002
     STOP_LOSS_PERCENT: float = 0.003
     TRAILING_ACTIVATION_PERCENT: float = 0.0015
     TRAILING_DISTANCE_PERCENT: float = 0.001
