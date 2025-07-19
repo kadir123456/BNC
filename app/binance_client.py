@@ -24,24 +24,35 @@ class BinanceClient:
             positions = await self.client.futures_position_information()
             return [p for p in positions if float(p['positionAmt']) != 0]
         except BinanceAPIException as e: print(f"Hata: Pozisyon bilgileri alınamadı: {e}"); return []
+    
+    # --- BU FONKSİYONU GÜNCELLİYORUZ ---
     async def create_market_order_with_tp_sl(self, symbol: str, side: str, quantity: float, entry_price: float, price_precision: int):
         def format_price(price): return f"{price:.{price_precision}f}"
         try:
-            main_order = await self.client.futures_create_order(symbol=symbol, side=side, type='MARKET', quantity=quantity)
-            print(f"Başarılı: {symbol} {side} {quantity} PİYASA EMRİ oluşturuldu.")
-            await asyncio.sleep(0.5)
+            # TP ve SL fiyatlarını hesapla ve formatla
             tp_price = entry_price * (1 + settings.TAKE_PROFIT_PERCENT) if side == 'BUY' else entry_price * (1 - settings.TAKE_PROFIT_PERCENT)
             sl_price = entry_price * (1 - settings.STOP_LOSS_PERCENT) if side == 'BUY' else entry_price * (1 + settings.TAKE_PROFIT_PERCENT)
-            formatted_tp_price, formatted_sl_price = format_price(tp_price), format_price(sl_price)
-            await self.client.futures_create_order(symbol=symbol, side='SELL' if side == 'BUY' else 'BUY', type='TAKE_PROFIT_MARKET', stopPrice=formatted_tp_price, closePosition=True)
-            print(f"Başarılı: {symbol} için TAKE PROFIT emri {formatted_tp_price} seviyesine kuruldu.")
-            await self.client.futures_create_order(symbol=symbol, side='SELL' if side == 'BUY' else 'BUY', type='STOP_MARKET', stopPrice=formatted_sl_price, closePosition=True)
-            print(f"Başarılı: {symbol} için STOP LOSS emri {formatted_sl_price} seviyesine kuruldu.")
+            formatted_tp_price = format_price(tp_price)
+            formatted_sl_price = format_price(sl_price)
+            
+            # Tek bir emirle hem pozisyonu aç hem de TP/SL'i kur
+            main_order = await self.client.futures_create_order(
+                symbol=symbol,
+                side=side,
+                type='MARKET',
+                quantity=quantity,
+                takeProfitPrice=formatted_tp_price, # TP fiyatını burada belirtiyoruz
+                stopPrice=formatted_sl_price        # SL fiyatını burada belirtiyoruz
+            )
+            print(f"Başarılı: {symbol} {side} {quantity} PİYASA EMRİ ve ilişkili TP/SL emirleri oluşturuldu.")
+            print(f"--> TP Seviyesi: {formatted_tp_price}, SL Seviyesi: {formatted_sl_price}")
             return main_order
+            
         except BinanceAPIException as e:
             print(f"Hata: Emir oluşturulurken sorun oluştu: {e}")
-            await self.client.futures_cancel_all_open_orders(symbol=symbol)
-            print(f"{symbol} için tüm açık emirler iptal edildi."); return None
+            # Bu durumda zaten emir oluşmamıştır, iptal edilecek bir şey yok.
+            return None
+            
     async def close_open_position(self, symbol: str):
         try:
             positions = await self.client.futures_position_information(symbol=symbol)
