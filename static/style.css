@@ -1,170 +1,82 @@
-/* Genel Sıfırlama ve Renk/Font Değişkenleri */
+/* ... (Bir önceki mesajdaki CSS kodunun aynısı, sadece birkaç ekleme var) ... */
 :root {
     --bg-color: #121826;
     --card-bg-color: #1a2233;
     --border-color: #2a3652;
     --text-color: #e2e8f0;
     --text-muted-color: #818e9e;
-    --primary-color: #10b981; /* Yeşil */
-    --danger-color: #ef4444;  /* Kırmızı */
-    --info-color: #3b82f6;   /* Mavi */
+    --primary-color: #10b981;
+    --danger-color: #ef4444;
+    --info-color: #3b82f6;
     --disabled-color: #4b5563;
     --font-family: 'Inter', sans-serif;
 }
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
     font-family: var(--font-family);
     background-color: var(--bg-color);
     color: var(--text-color);
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center; /* Giriş ekranını ortalamak için */
     min-height: 100vh;
     padding: 1rem;
 }
-
-/* Ana Konteyner */
 .container {
     width: 100%;
-    max-width: 500px;
+    max-width: 400px; /* Giriş ekranı için daha dar */
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
 }
-
-/* Başlık */
-header {
-    text-align: center;
+#app-container {
+    max-width: 500px; /* Ana panel için biraz daha geniş */
+    align-items: flex-start;
 }
-header h1 {
-    color: var(--text-color);
-    margin-bottom: 0.25rem;
-    font-size: 1.75rem;
-}
-header p {
-    color: var(--text-muted-color);
-    font-size: 0.9rem;
-}
-
-/* Kart Yapısı */
+header { text-align: center; width: 100%; position: relative; }
+header h1 { color: var(--text-color); margin-bottom: 0.25rem; font-size: 1.75rem; }
+header p { color: var(--text-muted-color); font-size: 0.9rem; }
+.btn-logout { position: absolute; top: 0; right: 0; padding: 0.5rem; flex-grow: 0; }
 .card {
     background-color: var(--card-bg-color);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-}
-.card h2 {
-    margin-bottom: 1.25rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.75rem;
-    font-size: 1.1rem;
-    font-weight: 500;
-}
-
-/* Form Elemanları */
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-}
-.form-group label {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--text-muted-color);
-}
-#symbol-input {
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    font-size: 1rem;
-    font-family: var(--font-family);
 }
-
-.button-group {
-    display: flex;
-    gap: 1rem;
+.card h1 { font-size: 1.5rem; text-align: center; margin-bottom: 1.5rem; }
+.card h2 { margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; font-size: 1.1rem; font-weight: 500; }
+.form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+.form-group label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted-color); }
+input[type="email"], input[type="password"], #symbol-input {
+    width: 100%; padding: 0.75rem; border: 1px solid var(--border-color);
+    border-radius: 6px; background-color: var(--bg-color); color: var(--text-color);
+    font-size: 1rem; font-family: var(--font-family);
 }
+.button-group { display: flex; gap: 1rem; }
 .btn {
-    flex-grow: 1;
-    padding: 0.75rem 1rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
+    flex-grow: 1; padding: 0.75rem 1rem; border: none; border-radius: 6px;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
     transition: background-color 0.2s ease, transform 0.1s ease;
 }
-.btn:active {
-    transform: scale(0.98);
-}
-.btn-start {
-    background-color: var(--primary-color);
-    color: #fff;
-}
+.btn:active { transform: scale(0.98); }
+.btn-start { background-color: var(--primary-color); color: #fff; }
 .btn-start:hover:not(:disabled) { background-color: #059669; }
-.btn-stop {
-    background-color: var(--danger-color);
-    color: #fff;
-}
+.btn-stop { background-color: var(--danger-color); color: #fff; }
 .btn-stop:hover:not(:disabled) { background-color: #dc2626; }
-.btn:disabled {
-    background-color: var(--disabled-color);
-    color: var(--text-muted-color);
-    cursor: not-allowed;
-}
-
-/* Durum Paneli */
-.status-grid {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.75rem 1rem;
-    align-items: center;
-}
-.status-label {
-    font-weight: 500;
-    color: var(--text-muted-color);
-}
-.status-value span {
-    font-weight: 500;
-    padding: 3px 8px;
-    border-radius: 4px;
-    display: inline-block;
-}
+.btn:disabled { background-color: var(--disabled-color); color: var(--text-muted-color); cursor: not-allowed; }
+.status-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.75rem 1rem; align-items: center; }
+.status-label { font-weight: 500; color: var(--text-muted-color); }
+.status-value span { font-weight: 500; padding: 3px 8px; border-radius: 4px; display: inline-block; }
 .status-running { background-color: var(--primary-color); color: #fff; }
 .status-stopped { background-color: var(--danger-color); color: #fff; }
 .status-in-position { background-color: var(--info-color); color: #fff; }
+.error-message { color: var(--danger-color); text-align: center; margin-top: 1rem; font-size: 0.9rem; }
 
-/* Alt Bilgi */
-footer {
-    text-align: center;
-    font-size: 0.8rem;
-    color: var(--text-muted-color);
-    padding-top: 1rem;
-}
-
-/* Mobil Uyumlu Stil (En Önemli Kısım) */
 @media (max-width: 480px) {
-    body {
-        padding: 0.75rem;
-    }
-    .card {
-        padding: 1rem;
-    }
-    .button-group {
-        flex-direction: column; /* Mobil'de butonları alt alta getir */
-    }
-    header h1 {
-        font-size: 1.5rem;
-    }
+    body { padding: 0.75rem; }
+    .card { padding: 1rem; }
+    .button-group { flex-direction: column; }
+    header h1 { font-size: 1.5rem; }
 }
