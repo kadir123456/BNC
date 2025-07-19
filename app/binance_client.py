@@ -25,30 +25,41 @@ class BinanceClient:
             return [p for p in positions if float(p['positionAmt']) != 0]
         except BinanceAPIException as e: print(f"Hata: Pozisyon bilgileri alınamadı: {e}"); return []
     
+    # --- BU FONKSİYONU GÜVENLİ, 3 ADIMLI YAPIYA GERİ DÖNDÜRÜYORUZ ---
     async def create_market_order_with_tp_sl(self, symbol: str, side: str, quantity: float, entry_price: float, price_precision: int):
         def format_price(price): return f"{price:.{price_precision}f}"
         try:
+            # 1. Ana Piyasa Emrini Gönder
+            main_order = await self.client.futures_create_order(symbol=symbol, side=side, type='MARKET', quantity=quantity)
+            print(f"Başarılı: {symbol} {side} {quantity} PİYASA EMRİ oluşturuldu.")
+            await asyncio.sleep(0.5)
+
+            # 2. TP ve SL Fiyatlarını Hesapla
             tp_price = entry_price * (1 + settings.TAKE_PROFIT_PERCENT) if side == 'BUY' else entry_price * (1 - settings.TAKE_PROFIT_PERCENT)
             sl_price = entry_price * (1 - settings.STOP_LOSS_PERCENT) if side == 'BUY' else entry_price * (1 + settings.TAKE_PROFIT_PERCENT)
             formatted_tp_price = format_price(tp_price)
             formatted_sl_price = format_price(sl_price)
+
+            # 3. Kâr Al (TP) Emrini Gönder
+            await self.client.futures_create_order(
+                symbol=symbol, side='SELL' if side == 'BUY' else 'BUY', type='TAKE_PROFIT_MARKET',
+                stopPrice=formatted_tp_price, closePosition=True)
+            print(f"Başarılı: {symbol} için TAKE PROFIT emri {formatted_tp_price} seviyesine kuruldu.")
+
+            # 4. Zarar Durdur (SL) Emrini Gönder
+            await self.client.futures_create_order(
+                symbol=symbol, side='SELL' if side == 'BUY' else 'BUY', type='STOP_MARKET',
+                stopPrice=formatted_sl_price, closePosition=True)
+            print(f"Başarılı: {symbol} için STOP LOSS emri {formatted_sl_price} seviyesine kuruldu.")
             
-            main_order = await self.client.futures_create_order(
-                symbol=symbol,
-                side=side,
-                type='MARKET',
-                quantity=quantity,
-                takeProfitPrice=formatted_tp_price,
-                stopLossPrice=formatted_sl_price  # <-- DEĞİŞİKLİK BURADA: stopPrice -> stopLossPrice
-            )
-            print(f"Başarılı: {symbol} {side} {quantity} PİYASA EMRİ ve ilişkili TP/SL emirleri oluşturuldu.")
-            print(f"--> TP Seviyesi: {formatted_tp_price}, SL Seviyesi: {formatted_sl_price}")
             return main_order
-            
         except BinanceAPIException as e:
             print(f"Hata: Emir oluşturulurken sorun oluştu: {e}")
+            await self.client.futures_cancel_all_open_orders(symbol=symbol)
+            print(f"--> GÜVENLİK: Hata nedeniyle {symbol} için tüm emirler ve pozisyonlar kapatıldı.")
             return None
-            
+
+    # ... (Diğer tüm fonksiyonlar aynı kalacak)
     async def close_open_position(self, symbol: str):
         try:
             positions = await self.client.futures_position_information(symbol=symbol)
@@ -63,6 +74,12 @@ class BinanceClient:
                     return response
             return None
         except BinanceAPIException as e: print(f"Hata: Pozisyon kapatılırken sorun oluştu: {e}"); return None
+    async def cancel_all_symbol_orders(self, symbol: str):
+        try:
+            await self.client.futures_cancel_all_open_orders(symbol=symbol)
+            print(f"--> TEMİZLİK: {symbol} için kalan tüm açık emirler iptal edildi.")
+        except BinanceAPIException as e:
+            print(f"Hata: Emirler temizlenirken sorun oluştu: {e}")
     async def close(self):
         if self.client: await self.client.close_connection(); self.client = None; print("Binance AsyncClient bağlantısı kapatıldı.")
     async def get_historical_klines(self, symbol: str, interval: str, limit: int = 100):
@@ -77,5 +94,17 @@ class BinanceClient:
         try:
             ticker = await self.client.futures_symbol_ticker(symbol=symbol); return float(ticker['price'])
         except BinanceAPIException as e: print(f"Hata: {symbol} fiyatı alınamadı: {e}"); return None
+    async def get_last_trade_pnl(self, symbol: str) -> float:
+        try:
+            trades = await self.client.futures_account_trades(symbol=symbol, limit=5)
+            if trades:
+                last_order_id = trades[-1]['orderId']
+                pnl = 0.0
+                for trade in reversed(trades):
+                    if trade['orderId'] == last_order_id: pnl += float(trade['realizedPnl'])
+                    else: break
+                return pnl
+            return 0.0
+        except BinanceAPIException as e: print(f"Hata: Son işlem PNL'i alınamadı: {e}"); return 0.0
 
 binance_client = BinanceClient()
