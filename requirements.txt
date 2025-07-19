@@ -5,3 +5,4 @@ websockets
 numpy
 pandas
 python-dotenv
+firebase-admin
